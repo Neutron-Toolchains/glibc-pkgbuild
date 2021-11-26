@@ -1,0 +1,4 @@
+#ignore some builder related files and folders
+src/
+*.log
+*.tar.xz
