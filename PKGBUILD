@@ -7,7 +7,7 @@
 pkgbase=glibc-x86_64
 pkgname=(glibc-x86_64 lib32-glibc-x86_64)
 pkgver=2.34
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -35,69 +35,102 @@ prepare() {
 
 build() {
 
+  configure_glibc_64() {
+    "$srcdir/glibc/configure" \
+          --host=x86_64-pc-linux-gnu \
+          --prefix=/usr \
+          --libdir=/usr/lib \
+          --libexecdir=/usr/lib \
+          --with-headers=/usr/include \
+          --with-bugurl=https://bugs.archlinux.org/ \
+          --enable-add-ons \
+          --enable-bind-now \
+          --enable-cet \
+          --enable-kernel=4.4 \
+          --enable-lock-elision \
+          --enable-multi-arch \
+          --enable-stack-protector=strong \
+          --enable-stackguard-randomization \
+          --disable-profile \
+          --enable-static-pie \
+          --enable-systemtap \
+          --disable-werror
+  }
+
+  configure_glibc_32() {
+    "$srcdir/glibc/configure" \
+          --host=i686-pc-linux-gnu \
+          --prefix=/usr \
+          --libdir=/usr/lib32 \
+          --libexecdir=/usr/lib32 \
+          --with-headers=/usr/include \
+          --with-bugurl=https://bugs.archlinux.org/ \
+          --enable-add-ons \
+          --enable-bind-now \
+          --enable-cet \
+          --enable-kernel=4.4 \
+          --enable-lock-elision \
+          --enable-multi-arch \
+          --enable-stack-protector=strong \
+          --enable-stackguard-randomization \
+          --disable-profile \
+          --enable-static-pie \
+          --enable-systemtap \
+          --disable-werror
+  }
+
+  unset_flags() {
+    unset CFLAGS
+    unset CXXFLAGS
+  }
+
+  configparms_fortify_source() {
+    echo "CC += -D_FORTIFY_SOURCE=2" >> configparms
+    echo "CXX += -D_FORTIFY_SOURCE=2" >> configparms
+  }
+
+  configparms_enable_programs() {
+    sed -i "/build-programs=/s#no#yes#" configparms
+  }
+
+  configparms_disable_programs() {
+    echo "build-programs=no" >> configparms
+  }
+
+  make_build_64 () {
+    make CFLAGS="$MAKE_FLAGS_64_FULL" CXXFLAGS="$MAKE_FLAGS_64_FULL" -j$(nproc --all)
+  }
+
+  make_build_32 () {
+    make CFLAGS="$MAKE_FLAGS_32_FULL" CXXFLAGS="$MAKE_FLAGS_32_FULL" -j$(nproc --all)
+  }
+
+  MAKE_FLAGS_64="-O2 -pipe"
+  MAKE_FLAGS_32="-mno-tls-direct-seg-refs -O2 -pipe"
+
   cd "$srcdir/glibc-build"
   echo "slibdir=/usr/lib" >> configparms
   echo "rtlddir=/usr/lib" >> configparms
   echo "sbindir=/usr/bin" >> configparms
   echo "rootsbindir=/usr/bin" >> configparms
 
-  unset CFLAGS
-  unset CXXFLAGS
-  "$srcdir/glibc/configure" \
-        --host=x86_64-pc-linux-gnu \
-        --prefix=/usr \
-        --libdir=/usr/lib \
-        --libexecdir=/usr/lib \
-        --with-headers=/usr/include \
-        --with-bugurl=https://bugs.archlinux.org/ \
-        --enable-add-ons \
-        --enable-bind-now \
-        --enable-cet \
-        --enable-kernel=4.4 \
-        --enable-lock-elision \
-        --enable-multi-arch \
-        --enable-stack-protector=strong \
-        --enable-stackguard-randomization \
-        --disable-profile \
-        --enable-static-pie \
-        --enable-systemtap \
-        --disable-werror
-
+  unset_flags
+  configure_glibc_64
   # build libraries with fortify disabled
-  echo "build-programs=no" >> configparms
-  make CFLAGS="-O2 -pipe -U_FORTIFY_SOURCE -ffunction-sections -fdata-sections" CXXFLAGS="-O2 -pipe -U_FORTIFY_SOURCE -ffunction-sections -fdata-sections" -j$(($(nproc --all) + 2))
+  configparms_disable_programs
+  MAKE_FLAGS_64_FULL="$MAKE_FLAGS_64 -U_FORTIFY_SOURCE -ffunction-sections -fdata-sections"
+  make_build_64
 
   # re-enable fortify for programs
-  sed -i "/build-programs=/s#no#yes#" configparms
-
-  unset CFLAGS
-  unset CXXFLAGS
-  "$srcdir/glibc/configure" \
-      --host=x86_64-pc-linux-gnu \
-      --prefix=/usr \
-      --libdir=/usr/lib \
-      --libexecdir=/usr/lib \
-      --with-headers=/usr/include \
-      --with-bugurl=https://bugs.archlinux.org/ \
-      --enable-add-ons \
-      --enable-bind-now \
-      --enable-cet \
-      --enable-kernel=4.4 \
-      --enable-lock-elision \
-      --enable-multi-arch \
-      --enable-stack-protector=strong \
-      --enable-stackguard-randomization \
-      --disable-profile \
-      --enable-static-pie \
-      --enable-systemtap \
-      --disable-werror
-
-  echo "CC += -D_FORTIFY_SOURCE=2" >> configparms
-  echo "CXX += -D_FORTIFY_SOURCE=2" >> configparms
-  make CFLAGS="-O2 -pipe -D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections" CXXFLAGS="-O2 -pipe -D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections" -j$(($(nproc --all) + 2))
+  configparms_enable_programs
+  unset_flags
+  configure_glibc_64
+  configparms_fortify_source
+  MAKE_FLAGS_64_FULL="$MAKE_FLAGS_64 -D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections"
+  make_build_64
 
   # build info pages manually for reprducibility
-  make info -j$(($(nproc --all) + 2))
+  make info -j$(nproc --all)
 
   cd "$srcdir/lib32-glibc-build"
   export CC="gcc -m32 -mstackrealign"
@@ -108,60 +141,20 @@ build() {
   echo "sbindir=/usr/bin" >> configparms
   echo "rootsbindir=/usr/bin" >> configparms
 
-  unset CFLAGS
-  unset CXXFLAGS
-  "$srcdir/glibc/configure" \
-      --host=i686-pc-linux-gnu \
-      --prefix=/usr \
-      --libdir=/usr/lib32 \
-      --libexecdir=/usr/lib32 \
-      --with-headers=/usr/include \
-      --with-bugurl=https://bugs.archlinux.org/ \
-      --enable-add-ons \
-      --enable-bind-now \
-      --enable-cet \
-      --enable-kernel=4.4 \
-      --enable-lock-elision \
-      --enable-multi-arch \
-      --enable-stack-protector=strong \
-      --enable-stackguard-randomization \
-      --disable-profile \
-      --enable-static-pie \
-      --enable-systemtap \
-      --disable-werror
-
+  unset_flags
+  configure_glibc_32
   # build libraries with fortify disabled
-  echo "build-programs=no" >> configparms
-  make CFLAGS="-mno-tls-direct-seg-refs -O2 -pipe -U_FORTIFY_SOURCE -ffunction-sections -fdata-sections" CXXFLAGS="-mno-tls-direct-seg-refs -O2 -pipe -U_FORTIFY_SOURCE -ffunction-sections -fdata-sections" -j$(($(nproc --all) + 2))
+  configparms_disable_programs
+  MAKE_FLAGS_32_FULL="$MAKE_FLAGS_32 -U_FORTIFY_SOURCE -ffunction-sections -fdata-sections"
+  make_build_32
 
   # re-enable fortify for programs
-  sed -i "/build-programs=/s#no#yes#" configparms
-
-  unset CFLAGS
-  unset CXXFLAGS
-  "$srcdir/glibc/configure" \
-      --host=i686-pc-linux-gnu \
-      --prefix=/usr \
-      --libdir=/usr/lib32 \
-      --libexecdir=/usr/lib32 \
-      --with-headers=/usr/include \
-      --with-bugurl=https://bugs.archlinux.org/ \
-      --enable-add-ons \
-      --enable-bind-now \
-      --enable-cet \
-      --enable-kernel=4.4 \
-      --enable-lock-elision \
-      --enable-multi-arch \
-      --enable-stack-protector=strong \
-      --enable-stackguard-randomization \
-      --disable-profile \
-      --enable-static-pie \
-      --enable-systemtap \
-      --disable-werror
-
-  echo "CC += -D_FORTIFY_SOURCE=2" >> configparms
-  echo "CXX += -D_FORTIFY_SOURCE=2" >> configparms
-  make CFLAGS="-mno-tls-direct-seg-refs -O2 -pipe -D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections" CXXFLAGS="-mno-tls-direct-seg-refs -O2 -pipe -D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections" -j$(($(nproc --all) + 2))
+  configparms_enable_programs
+  unset_flags
+  configure_glibc_32
+  configparms_fortify_source
+  MAKE_FLAGS_32_FULL="$MAKE_FLAGS_32 -D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections"
+  make_build_32
 
 }
 
