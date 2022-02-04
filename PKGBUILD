@@ -6,8 +6,8 @@
 
 pkgbase=glibc-x86_64
 pkgname=(glibc-x86_64 lib32-glibc-x86_64)
-pkgver=2.34
-pkgrel=2
+pkgver=2.35
+pkgrel=1
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -19,7 +19,7 @@ source=("https://ftp.gnu.org/gnu/glibc/glibc-$pkgver.tar.xz"
         locale-gen
         lib32-glibc.conf
         sdt.h sdt-config.h)
-md5sums=('31998b53fb39cb946e96abc310af1c89'
+md5sums=('dd571c67d85d89d7f60b854a4e207423'
          '07ac979b6ab5eeb778d55f041529d623'
          '476e9113489f93b348b21e144b6a8fcf'
          '6e052f1cb693d5d3203f50f9d4e8c33b'
