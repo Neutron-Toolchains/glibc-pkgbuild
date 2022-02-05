@@ -46,7 +46,7 @@ build() {
           --enable-add-ons \
           --enable-bind-now \
           --enable-cet \
-          --enable-kernel=4.4 \
+          --enable-kernel=5.10 \
           --enable-lock-elision \
           --enable-multi-arch \
           --enable-stack-protector=strong \
@@ -68,7 +68,7 @@ build() {
           --enable-add-ons \
           --enable-bind-now \
           --enable-cet \
-          --enable-kernel=4.4 \
+          --enable-kernel=5.10 \
           --enable-lock-elision \
           --enable-multi-arch \
           --enable-stack-protector=strong \
@@ -170,7 +170,7 @@ check() {
 
 package_glibc-x86_64() {
   pkgdesc='GNU C Library'
-  depends=('linux-api-headers>=4.10' tzdata filesystem)
+  depends=('linux-api-headers>=5.10' tzdata filesystem)
   provides=("glibc=${pkgver}")
   conflicts=('glibc')
   optdepends=('gd: for memusagestat')
