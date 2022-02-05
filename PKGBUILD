@@ -90,8 +90,8 @@ build() {
   }
 
   configparms_fortify_source() {
-    echo "CC += -D_FORTIFY_SOURCE=2" >> configparms
-    echo "CXX += -D_FORTIFY_SOURCE=2" >> configparms
+    echo "CFLAGS += -D_FORTIFY_SOURCE=2" >> configparms
+    echo "CXXFLAGS += -D_FORTIFY_SOURCE=2" >> configparms
   }
 
   configparms_enable_programs() {
