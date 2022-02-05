@@ -16,17 +16,20 @@ optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
 source=("https://ftp.gnu.org/gnu/glibc/glibc-$pkgver.tar.xz"
         locale.gen.txt
+        pull-locale.sh
         locale-gen
         lib32-glibc.conf
         sdt.h sdt-config.h)
 md5sums=('dd571c67d85d89d7f60b854a4e207423'
          'SKIP'
+         'b90d6a5a703228bfe5b7dc121a6c949c'
          '476e9113489f93b348b21e144b6a8fcf'
          '6e052f1cb693d5d3203f50f9d4e8c33b'
          '91fec3b7e75510ae2ac42533aa2e695e'
          '680df504c683640b02ed4a805797c0b2')
 
 prepare() {
+  bash pull-locale.sh
   mkdir -p glibc-build lib32-glibc-build
 
   [[ -d glibc-$pkgver ]] && ln -s glibc-$pkgver glibc 
