@@ -3,3 +3,4 @@ src/
 *.log
 *.tar.xz
 locale.gen.txt
+pkg/
