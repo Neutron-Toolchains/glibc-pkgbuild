@@ -71,7 +71,7 @@ build() {
           --enable-add-ons \
           --enable-bind-now \
           --enable-cet \
-          --enable-kernel=5.10 \
+          --enable-kernel=4.19 \
           --enable-lock-elision \
           --enable-multi-arch \
           --enable-stack-protector=strong \
