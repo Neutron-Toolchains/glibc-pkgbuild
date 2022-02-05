@@ -168,7 +168,7 @@ check() {
   sed -i '/FORTIFY/d' configparms
 
   #some failures are "expected"
-  make check || true
+  make check -j$(nproc --all) || true
 }
 
 package_glibc-x86_64() {
