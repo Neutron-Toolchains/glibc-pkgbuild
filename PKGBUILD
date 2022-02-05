@@ -83,8 +83,6 @@ build() {
   }
 
   unset_flags() {
-    unset CC
-    unset CXX
     unset CFLAGS
     unset CXXFLAGS
   }
