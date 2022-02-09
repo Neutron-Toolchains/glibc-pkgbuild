@@ -4,3 +4,5 @@ src/
 *.tar.xz
 locale.gen.txt
 pkg/
+*glibc*.tar.zst
+*glibc*.pkg
