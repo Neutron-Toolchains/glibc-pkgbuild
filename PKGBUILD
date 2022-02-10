@@ -1,13 +1,13 @@
 # Maintainer:  Dakkshesh <dakkshesh5@gmail.com>
 # Contributor: Allan McRae <allan@archlinux.org>
 
-# toolchain build order: linux-api-headers->glibc->binutils->gcc->binutils->glibc
+# toolchain build order: linux-api-headers->glibc->binutils->gcc->glibc->binutils->gcc
 # NOTE: valgrind requires rebuilt with each major glibc version
 
 pkgbase=glibc-x86_64
 pkgname=(glibc-x86_64 lib32-glibc-x86_64)
 pkgver=2.35
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -88,8 +88,7 @@ build() {
   }
 
   configparms_fortify_source() {
-    echo "CFLAGS += -D_FORTIFY_SOURCE=2" >> configparms
-    echo "CXXFLAGS += -D_FORTIFY_SOURCE=2" >> configparms
+    echo "CFLAGS += -Wp,-D_FORTIFY_SOURCE=2" >> configparms
   }
 
   configparms_enable_programs() {
@@ -101,11 +100,11 @@ build() {
   }
 
   make_build_64 () {
-    make CFLAGS="$MAKE_FLAGS_64_FULL" CXXFLAGS="$MAKE_FLAGS_64_FULL" -j$(nproc --all)
+    make -O CFLAGS="$MAKE_FLAGS_64_FULL" CXXFLAGS="$MAKE_FLAGS_64_FULL" -j$(nproc --all)
   }
 
   make_build_32 () {
-    make CFLAGS="$MAKE_FLAGS_32_FULL" CXXFLAGS="$MAKE_FLAGS_32_FULL" -j$(nproc --all)
+    make -O CFLAGS="$MAKE_FLAGS_32_FULL" CXXFLAGS="$MAKE_FLAGS_32_FULL" -j$(nproc --all)
   }
 
   MAKE_FLAGS_64="-O2 -pipe"
@@ -129,7 +128,7 @@ build() {
   unset_flags
   configure_glibc_64
   configparms_fortify_source
-  MAKE_FLAGS_64_FULL="$MAKE_FLAGS_64 -D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections"
+  MAKE_FLAGS_64_FULL="$MAKE_FLAGS_64 -Wp,-D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections"
   make_build_64
 
   # build info pages manually for reprducibility
@@ -156,21 +155,40 @@ build() {
   unset_flags
   configure_glibc_32
   configparms_fortify_source
-  MAKE_FLAGS_32_FULL="$MAKE_FLAGS_32 -D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections"
+  MAKE_FLAGS_32_FULL="$MAKE_FLAGS_32 -Wp,-D_FORTIFY_SOURCE=2 -ffunction-sections -fdata-sections"
   make_build_32
 
+}
+
+skip_test() {
+  test=$1
+  file=$2
+  sed -i "s/\b$test\b//" $srcdir/glibc/$file
 }
 
 check() {
   cd glibc-build
 
-  #remove fortify in preparation to run test-suite
-  sed -i '/FORTIFY/d' configparms
+  # adjust/remove buildflags that cause false-positive testsuite failures
+  sed -i '/FORTIFY/d' configparms                                     # failure to build testsuite
+  sed -i 's/-Werror=format-security/-Wformat-security/' config.make   # failure to build testsuite
+  sed -i '/CFLAGS/s/-fno-plt//' config.make                           # 16 failures
+  sed -i '/CFLAGS/s/-fexceptions//' config.make                       # 1 failure
+  LDFLAGS=${LDFLAGS/,-z,now/}                                         # 10 failures
 
-  #some failures are "expected"
-  make check -j$(nproc --all) || true
+  # The following tests fail due to restrictions in the Arch build system
+  # The correct fix is to add the following to the systemd-nspawn call:
+  # --capability=CAP_IPC_LOCK --system-call-filter="@clock @pkey"
+  skip_test test-errno-linux sysdeps/unix/sysv/linux/Makefile
+  skip_test tst-ntp_gettime  sysdeps/unix/sysv/linux/Makefile
+  skip_test tst-ntp_gettimex sysdeps/unix/sysv/linux/Makefile
+  skip_test tst-mlock2       sysdeps/unix/sysv/linux/Makefile
+  skip_test tst-pkey         sysdeps/unix/sysv/linux/Makefile
+  skip_test tst-adjtime      time/Makefile
+  skip_test tst-clock2       time/Makefile
+
+  make -O check
 }
-
 package_glibc-x86_64() {
   pkgdesc='GNU C Library'
   depends=('linux-api-headers>=5.10' tzdata filesystem)
