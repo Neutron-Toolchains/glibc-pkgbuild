@@ -6,3 +6,4 @@ locale.gen.txt
 pkg/
 *glibc*.tar.zst
 *glibc*.pkg
+glibc/

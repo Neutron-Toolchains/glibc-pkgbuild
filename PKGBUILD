@@ -7,20 +7,20 @@
 pkgbase=glibc-x86_64
 pkgname=(glibc-x86_64 lib32-glibc-x86_64)
 pkgver=2.35
-pkgrel=2
+pkgrel=3
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
 makedepends=(git gd lib32-gcc-libs python)
 optdepends=('perl: for mtrace')
 options=(!strip staticlibs)
-source=("https://ftp.gnu.org/gnu/glibc/glibc-$pkgver.tar.xz"
+source=("git+https://sourceware.org/git/glibc.git#branch=release/$pkgver/master"
         locale.gen.txt
         pull-locale.sh
         locale-gen
         lib32-glibc.conf
         sdt.h sdt-config.h)
-md5sums=('dd571c67d85d89d7f60b854a4e207423'
+md5sums=('SKIP'
          'SKIP'
          'b90d6a5a703228bfe5b7dc121a6c949c'
          '476e9113489f93b348b21e144b6a8fcf'
@@ -31,8 +31,6 @@ md5sums=('dd571c67d85d89d7f60b854a4e207423'
 prepare() {
   bash pull-locale.sh
   mkdir -p glibc-build lib32-glibc-build
-
-  [[ -d glibc-$pkgver ]] && ln -s glibc-$pkgver glibc 
   cd glibc
 }
 
