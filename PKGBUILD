@@ -7,7 +7,7 @@
 pkgbase=glibc-x86_64
 pkgname=(glibc-x86_64 lib32-glibc-x86_64)
 pkgver=2.35
-pkgrel=3
+pkgrel=4
 arch=(x86_64)
 url='https://www.gnu.org/software/libc'
 license=(GPL LGPL)
@@ -19,19 +19,27 @@ source=("git+https://sourceware.org/git/glibc.git#branch=release/$pkgver/master"
         pull-locale.sh
         locale-gen
         lib32-glibc.conf
-        sdt.h sdt-config.h)
+        sdt.h sdt-config.h
+        disable-clone3.diff)
 md5sums=('SKIP'
          'SKIP'
          'b90d6a5a703228bfe5b7dc121a6c949c'
          '476e9113489f93b348b21e144b6a8fcf'
          '6e052f1cb693d5d3203f50f9d4e8c33b'
          '91fec3b7e75510ae2ac42533aa2e695e'
-         '680df504c683640b02ed4a805797c0b2')
+         '680df504c683640b02ed4a805797c0b2'
+         '780020afbb6fc77fcd7e92aa45609602')
 
 prepare() {
   bash pull-locale.sh
   mkdir -p glibc-build lib32-glibc-build
   cd glibc
+
+  # Disable clone3 syscall for now
+  # Can be removed when eletron{9,11,12} and discord are removed or patched:
+  # https://github.com/electron/electron/commit/993ecb5bdd5c57024c8718ca6203a8f924d6d574
+  # Patch src: https://patchwork.ozlabs.org/project/glibc/patch/87eebkf8ph.fsf@oldenburg.str.redhat.com/
+  patch -Np1 -i "${srcdir}"/disable-clone3.diff
 }
 
 build() {
@@ -55,6 +63,7 @@ build() {
           --disable-profile \
           --enable-static-pie \
           --enable-systemtap \
+          --disable-crypt \
           --disable-werror
   }
 
@@ -77,6 +86,7 @@ build() {
           --disable-profile \
           --enable-static-pie \
           --enable-systemtap \
+          --disable-crypt \
           --disable-werror
   }
 
